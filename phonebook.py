@@ -108,14 +108,14 @@ def delete_contact():
 
 def menu():
     while True:
-        print("\n--- PHONEBOOK ---")
-        print("1. Add from console")
-        print("2. Add from CSV")
-        print("3. Show all")
-        print("4. Search by name")
-        print("5. Update")
-        print("6. Delete")
-        print("0. Exit")
+        print("\n PHONEBOOK")
+        print("1 - Add from console")
+        print("2 - Add from CSV")
+        print("3 - Show all")
+        print("4 - Search by name")
+        print("5 - Update")
+        print("6 - Delete")
+        print("0 - Exit")
 
         choice = input("Choose: ")
 
