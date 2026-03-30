@@ -1,6 +1,7 @@
 from connect import connect
 import csv
 
+
 def insert_from_console():
     name = input("Enter name: ")
     phone = input("Enter phone: ")
@@ -90,6 +91,7 @@ def update_contact():
     conn.close()
     print("Updated")
 
+
 def delete_contact():
     val = input("Enter name or phone to delete: ")
 
@@ -105,6 +107,7 @@ def delete_contact():
     cur.close()
     conn.close()
     print("Deleted")
+
 
 def menu():
     while True:
