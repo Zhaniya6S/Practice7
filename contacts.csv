@@ -1,5 +1,13 @@
+<<<<<<< HEAD
 name phone
 Anna +77784321
 Alexander +32367890
 Dias +9805555
 Zhaniya +7665235
+=======
+name,phone
+Anna, +77784321
+Alexander,+32367890
+Dias,+9805555
+Zhaniya,+7665235
+>>>>>>> c04a56fdefa6bfdbb1de51d006013b69b9ed7088
