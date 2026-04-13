@@ -8,7 +8,6 @@ def init_database():
     try:
         print("\n=== Database Initialization ===")
         
-        # 1. Create table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS phonebook (
                 id SERIAL PRIMARY KEY,
@@ -16,19 +15,16 @@ def init_database():
                 phone VARCHAR(50) NOT NULL
             )
         """)
-        print("✓ Phonebook table created/exists")
+        print("Phonebook table created/exists")
         
-        # 2. Create indexes
         cur.execute("CREATE INDEX IF NOT EXISTS idx_phonebook_name ON phonebook(name)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_phonebook_phone ON phonebook(phone)")
-        print("✓ Indexes created")
-        
-        # 3. Drop old functions if they exist
+        print("Indexes created")
+   
         cur.execute("DROP FUNCTION IF EXISTS get_contacts_by_pattern(TEXT)")
         cur.execute("DROP FUNCTION IF EXISTS get_contacts_paginated(INT, INT)")
-        print("✓ Old functions removed")
+        print("Old functions removed")
         
-        # 4. Pattern search function (fixed)
         cur.execute("""
             CREATE OR REPLACE FUNCTION get_contacts_by_pattern(p_pattern TEXT)
             RETURNS TABLE(name VARCHAR, phone VARCHAR) AS $$
@@ -42,9 +38,8 @@ def init_database():
             END;
             $$ LANGUAGE plpgsql
         """)
-        print("✓ Function get_contacts_by_pattern created")
-        
-        # 5. Pagination function (fixed)
+        print("Function get_contacts_by_pattern created")
+     
         cur.execute("""
             CREATE OR REPLACE FUNCTION get_contacts_paginated(p_limit INT, p_offset INT)
             RETURNS TABLE(name VARCHAR, phone VARCHAR) AS $$
@@ -57,14 +52,12 @@ def init_database():
             END;
             $$ LANGUAGE plpgsql
         """)
-        print("✓ Function get_contacts_paginated created")
+        print("Function get_contacts_paginated created")
         
-        # 6. Drop old procedures
         cur.execute("DROP PROCEDURE IF EXISTS upsert_contact(VARCHAR, VARCHAR)")
         cur.execute("DROP PROCEDURE IF EXISTS delete_contact_proc(VARCHAR)")
         cur.execute("DROP PROCEDURE IF EXISTS bulk_insert_contacts(VARCHAR[], VARCHAR[])")
-        
-        # 7. Upsert procedure
+
         cur.execute("""
             CREATE OR REPLACE PROCEDURE upsert_contact(p_name VARCHAR, p_phone VARCHAR)
             LANGUAGE plpgsql AS $$
@@ -77,9 +70,8 @@ def init_database():
             END;
             $$
         """)
-        print("✓ Procedure upsert_contact created")
-        
-        # 8. Delete procedure
+        print("Procedure upsert_contact created")
+
         cur.execute("""
             CREATE OR REPLACE PROCEDURE delete_contact_proc(p_val VARCHAR)
             LANGUAGE plpgsql AS $$
@@ -88,9 +80,8 @@ def init_database():
             END;
             $$
         """)
-        print("✓ Procedure delete_contact_proc created")
+        print("Procedure delete_contact_proc created")
         
-        # 9. Bulk insert procedure
         cur.execute("""
             CREATE OR REPLACE PROCEDURE bulk_insert_contacts(p_names VARCHAR[], p_phones VARCHAR[])
             LANGUAGE plpgsql AS $$
@@ -112,13 +103,13 @@ def init_database():
             END;
             $$
         """)
-        print("✓ Procedure bulk_insert_contacts created")
+        print("Procedure bulk_insert_contacts created")
         
         conn.commit()
         print("\n=== Database initialization completed successfully ===\n")
         
     except Exception as e:
-        print(f"✗ Initialization error: {e}")
+        print(f"Initialization error: {e}")
         conn.rollback()
     finally:
         cur.close()
@@ -138,10 +129,10 @@ def insert_or_update():
         cur = conn.cursor()
         cur.execute("CALL upsert_contact(%s, %s)", (name, phone))
         conn.commit()
-        print(f"✓ Contact '{name}' successfully added/updated")
+        print(f"Contact '{name}' successfully added/updated")
         
     except Exception as e:
-        print(f"✗ Error: {e}")
+        print(f"Error: {e}")
         if 'conn' in locals():
             conn.rollback()
     finally:
@@ -163,19 +154,19 @@ def insert_from_csv():
             
         with open('contacts.csv', newline='', encoding='utf-8') as f:
             reader = csv.reader(f)
-            next(reader)  # Skip header
+            next(reader)
             count = 0
             for row in reader:
                 if len(row) >= 2 and row[0].strip() and row[1].strip():
                     cur.execute("CALL upsert_contact(%s, %s)", (row[0].strip(), row[1].strip()))
                     count += 1
         conn.commit()
-        print(f"✓ Processed contacts from CSV: {count}")
+        print(f"Processed contacts from CSV: {count}")
         
     except FileNotFoundError:
-        print("✗ contacts.csv file not found!")
+        print("contacts.csv file not found!")
     except Exception as e:
-        print(f"✗ Error: {e}")
+        print(f"Error: {e}")
         if 'conn' in locals():
             conn.rollback()
     finally:
@@ -198,7 +189,7 @@ def search_by_pattern():
         results = cur.fetchall()
         
         if results:
-            print(f"\n✓ Found {len(results)} contact(s):")
+            print(f"\nFound {len(results)} contact(s):")
             print("-" * 40)
             for i, r in enumerate(results, 1):
                 print(f"{i}. Name: {r[0]}, Phone: {r[1]}")
@@ -207,7 +198,7 @@ def search_by_pattern():
             print("No contacts found")
             
     except Exception as e:
-        print(f"✗ Error: {e}")
+        print(f"Error: {e}")
     finally:
         if 'cur' in locals():
             cur.close()
@@ -230,7 +221,7 @@ def show_paged():
         results = cur.fetchall()
         
         if results:
-            print(f"\n✓ Showing {len(results)} contact(s):")
+            print(f"\nShowing {len(results)} contact(s):")
             print("-" * 40)
             for i, r in enumerate(results, 1):
                 print(f"{i}. Name: {r[0]}, Phone: {r[1]}")
@@ -239,9 +230,9 @@ def show_paged():
             print("No contacts to display")
             
     except ValueError:
-        print("✗ Please enter valid numbers!")
+        print("Please enter valid numbers!")
     except Exception as e:
-        print(f"✗ Error: {e}")
+        print(f"Error: {e}")
     finally:
         if 'cur' in locals():
             cur.close()
@@ -260,10 +251,10 @@ def delete_contact():
         cur = conn.cursor()
         cur.execute("CALL delete_contact_proc(%s)", (val,))
         conn.commit()
-        print(f"✓ Contact(s) with '{val}' successfully deleted")
+        print(f"Contact(s) with '{val}' successfully deleted")
         
     except Exception as e:
-        print(f"✗ Error: {e}")
+        print(f"Error: {e}")
         if 'conn' in locals():
             conn.rollback()
     finally:
@@ -275,7 +266,7 @@ def delete_contact():
 def bulk_insert():
     """Bulk insert multiple contacts"""
     try:
-        print("\n=== Bulk Insert Contacts ===")
+        print("\n   Bulk Insert Contacts   ")
         print("Enter contacts in format: name,phone")
         print("Enter empty line to finish")
         
@@ -299,12 +290,12 @@ def bulk_insert():
             cur = conn.cursor()
             cur.execute("CALL bulk_insert_contacts(%s, %s)", (names, phones))
             conn.commit()
-            print(f"✓ Bulk insert completed for {len(names)} contact(s)")
+            print(f"Bulk insert completed for {len(names)} contact(s)")
         else:
             print("No contacts entered")
             
     except Exception as e:
-        print(f"✗ Error: {e}")
+        print(f"Error: {e}")
         if 'conn' in locals():
             conn.rollback()
     finally:
@@ -315,10 +306,8 @@ def bulk_insert():
 
 def menu():
     """Main menu"""
-    # Initialize database
     init_database()
     
-    # Check if there are any contacts
     conn = connect()
     cur = conn.cursor()
     cur.execute("SELECT COUNT(*) FROM phonebook")
@@ -362,7 +351,7 @@ def menu():
             print("\nGoodbye!")
             break
         else:
-            print("✗ Invalid choice, please try again")
+            print("Invalid choice, please try again")
 
 if __name__ == "__main__":
     menu()
