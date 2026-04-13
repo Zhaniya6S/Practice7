@@ -2,12 +2,9 @@ from connect import connect
 import csv
 
 def init_database():
-    """Initialize database: create tables, functions, and procedures"""
     conn = connect()
     cur = conn.cursor()
     try:
-        print("\n=== Database Initialization ===")
-        
         cur.execute("""
             CREATE TABLE IF NOT EXISTS phonebook (
                 id SERIAL PRIMARY KEY,
@@ -15,108 +12,18 @@ def init_database():
                 phone VARCHAR(50) NOT NULL
             )
         """)
-        print("Phonebook table created/exists")
-        
         cur.execute("CREATE INDEX IF NOT EXISTS idx_phonebook_name ON phonebook(name)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_phonebook_phone ON phonebook(phone)")
-        print("Indexes created")
-   
-        cur.execute("DROP FUNCTION IF EXISTS get_contacts_by_pattern(TEXT)")
-        cur.execute("DROP FUNCTION IF EXISTS get_contacts_paginated(INT, INT)")
-        print("Old functions removed")
-        
-        cur.execute("""
-            CREATE OR REPLACE FUNCTION get_contacts_by_pattern(p_pattern TEXT)
-            RETURNS TABLE(name VARCHAR, phone VARCHAR) AS $$
-            BEGIN
-                RETURN QUERY 
-                SELECT c.name, c.phone 
-                FROM phonebook c
-                WHERE c.name ILIKE '%' || p_pattern || '%'
-                   OR c.phone ILIKE '%' || p_pattern || '%'
-                ORDER BY c.id;
-            END;
-            $$ LANGUAGE plpgsql
-        """)
-        print("Function get_contacts_by_pattern created")
-     
-        cur.execute("""
-            CREATE OR REPLACE FUNCTION get_contacts_paginated(p_limit INT, p_offset INT)
-            RETURNS TABLE(name VARCHAR, phone VARCHAR) AS $$
-            BEGIN
-                RETURN QUERY 
-                SELECT c.name, c.phone 
-                FROM phonebook c
-                ORDER BY c.id
-                LIMIT p_limit OFFSET p_offset;
-            END;
-            $$ LANGUAGE plpgsql
-        """)
-        print("Function get_contacts_paginated created")
-        
-        cur.execute("DROP PROCEDURE IF EXISTS upsert_contact(VARCHAR, VARCHAR)")
-        cur.execute("DROP PROCEDURE IF EXISTS delete_contact_proc(VARCHAR)")
-        cur.execute("DROP PROCEDURE IF EXISTS bulk_insert_contacts(VARCHAR[], VARCHAR[])")
-
-        cur.execute("""
-            CREATE OR REPLACE PROCEDURE upsert_contact(p_name VARCHAR, p_phone VARCHAR)
-            LANGUAGE plpgsql AS $$
-            BEGIN
-                IF EXISTS (SELECT 1 FROM phonebook WHERE name = p_name) THEN
-                    UPDATE phonebook SET phone = p_phone WHERE name = p_name;
-                ELSE
-                    INSERT INTO phonebook(name, phone) VALUES(p_name, p_phone);
-                END IF;
-            END;
-            $$
-        """)
-        print("Procedure upsert_contact created")
-
-        cur.execute("""
-            CREATE OR REPLACE PROCEDURE delete_contact_proc(p_val VARCHAR)
-            LANGUAGE plpgsql AS $$
-            BEGIN
-                DELETE FROM phonebook WHERE name = p_val OR phone = p_val;
-            END;
-            $$
-        """)
-        print("Procedure delete_contact_proc created")
-        
-        cur.execute("""
-            CREATE OR REPLACE PROCEDURE bulk_insert_contacts(p_names VARCHAR[], p_phones VARCHAR[])
-            LANGUAGE plpgsql AS $$
-            DECLARE
-                i INT;
-                invalid_phones TEXT := '';
-            BEGIN
-                FOR i IN 1 .. array_length(p_names, 1) LOOP
-                    IF p_phones[i] ~ '^[0-9]+$' THEN
-                        CALL upsert_contact(p_names[i], p_phones[i]);
-                    ELSE
-                        invalid_phones := invalid_phones || format('Name: %s, Phone: %s (invalid format)\\n', p_names[i], p_phones[i]);
-                    END IF;
-                END LOOP;
-                
-                IF invalid_phones <> '' THEN
-                    RAISE NOTICE 'Invalid phone numbers found:\\n%', invalid_phones;
-                END IF;
-            END;
-            $$
-        """)
-        print("Procedure bulk_insert_contacts created")
-        
         conn.commit()
-        print("\n=== Database initialization completed successfully ===\n")
-        
+        print("Database structure ready")
     except Exception as e:
-        print(f"Initialization error: {e}")
-        conn.rollback()
+        print(f"Error: {e}")
     finally:
         cur.close()
         conn.close()
 
+
 def insert_or_update():
-    """Add or update a contact"""
     try:
         name = input("Enter name: ").strip()
         phone = input("Enter phone: ").strip()
@@ -141,8 +48,8 @@ def insert_or_update():
         if 'conn' in locals():
             conn.close()
 
+
 def insert_from_csv():
-    """Add contacts from CSV file"""
     try:
         conn = connect()
         cur = conn.cursor()
@@ -175,8 +82,8 @@ def insert_from_csv():
         if 'conn' in locals():
             conn.close()
 
+
 def search_by_pattern():
-    """Search contacts by pattern"""
     try:
         pattern = input("Enter name or phone part to search: ").strip()
         if not pattern:
@@ -205,8 +112,8 @@ def search_by_pattern():
         if 'conn' in locals():
             conn.close()
 
+
 def show_paged():
-    """Display contacts with pagination"""
     try:
         limit = int(input("Records per page: "))
         offset = int(input("Offset (how many to skip): "))
@@ -239,8 +146,8 @@ def show_paged():
         if 'conn' in locals():
             conn.close()
 
+
 def delete_contact():
-    """Delete contact by name or phone"""
     try:
         val = input("Enter name or phone to delete: ").strip()
         if not val:
@@ -263,8 +170,8 @@ def delete_contact():
         if 'conn' in locals():
             conn.close()
 
+
 def bulk_insert():
-    """Bulk insert multiple contacts"""
     try:
         print("\n   Bulk Insert Contacts   ")
         print("Enter contacts in format: name,phone")
@@ -304,8 +211,8 @@ def bulk_insert():
         if 'conn' in locals():
             conn.close()
 
+
 def menu():
-    """Main menu"""
     init_database()
     
     conn = connect()
@@ -316,7 +223,7 @@ def menu():
     conn.close()
     
     if count == 0:
-        print("\n=== Add test data ===")
+        print("\n   Add test data    ")
         print("Select option 1 to add contacts")
         print("Or option 2 to load from CSV")
     
