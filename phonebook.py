@@ -56,7 +56,7 @@ def insert_from_csv():
         
         import os
         if not os.path.exists('contacts.csv'):
-            print("✗ contacts.csv file not found!")
+            print("contacts.csv file not found!")
             return
             
         with open('contacts.csv', newline='', encoding='utf-8') as f:
