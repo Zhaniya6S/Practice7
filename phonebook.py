@@ -133,6 +133,12 @@ def show_paged():
             for i, r in enumerate(results, 1):
                 print(f"{i}. Name: {r[0]}, Phone: {r[1]}")
             print("-" * 40)
+            
+            # Показать общее количество записей
+            cur.execute("SELECT COUNT(*) FROM phonebook")
+            total = cur.fetchone()[0]
+            print(f"Total contacts in database: {total}")
+            
         else:
             print("No contacts to display")
             
@@ -177,8 +183,7 @@ def bulk_insert():
         print("Enter contacts in format: name,phone")
         print("Enter empty line to finish")
         
-        names = []
-        phones = []
+        contacts = []
         
         while True:
             entry = input("Contact (name,phone): ").strip()
@@ -187,17 +192,25 @@ def bulk_insert():
             
             parts = entry.split(',')
             if len(parts) >= 2:
-                names.append(parts[0].strip())
-                phones.append(parts[1].strip())
+                name = parts[0].strip()
+                phone = parts[1].strip()
+                if name and phone:
+                    contacts.append((name, phone))
+                else:
+                    print("Name and phone cannot be empty!")
             else:
                 print("Invalid format. Use: name,phone")
         
-        if names:
+        if contacts:
             conn = connect()
             cur = conn.cursor()
-            cur.execute("CALL bulk_insert_contacts(%s, %s)", (names, phones))
+            
+            # Вставляем каждый контакт через upsert_contact
+            for name, phone in contacts:
+                cur.execute("CALL upsert_contact(%s, %s)", (name, phone))
+            
             conn.commit()
-            print(f"Bulk insert completed for {len(names)} contact(s)")
+            print(f"Bulk insert completed for {len(contacts)} contact(s)")
         else:
             print("No contacts entered")
             
@@ -212,20 +225,53 @@ def bulk_insert():
             conn.close()
 
 
+def show_all_contacts():
+    """Показать все контакты (без пагинации)"""
+    try:
+        conn = connect()
+        cur = conn.cursor()
+        cur.execute("SELECT name, phone FROM phonebook ORDER BY id")
+        results = cur.fetchall()
+        
+        if results:
+            print(f"\n{'='*50}")
+            print(f"ALL CONTACTS (Total: {len(results)})")
+            print(f"{'='*50}")
+            for i, r in enumerate(results, 1):
+                print(f"{i}. Name: {r[0]}, Phone: {r[1]}")
+            print(f"{'='*50}")
+        else:
+            print("No contacts found in database")
+            
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        if 'cur' in locals():
+            cur.close()
+        if 'conn' in locals():
+            conn.close()
+
+
 def menu():
     init_database()
     
-    conn = connect()
-    cur = conn.cursor()
-    cur.execute("SELECT COUNT(*) FROM phonebook")
-    count = cur.fetchone()[0]
-    cur.close()
-    conn.close()
-    
-    if count == 0:
-        print("\n   Add test data    ")
-        print("Select option 1 to add contacts")
-        print("Or option 2 to load from CSV")
+    # Показываем количество контактов при запуске
+    try:
+        conn = connect()
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM phonebook")
+        count = cur.fetchone()[0]
+        cur.close()
+        conn.close()
+        
+        if count == 0:
+            print("\n📞 Database is empty!")
+            print("Select option 1 to add contacts")
+            print("Or option 2 to load from CSV")
+        else:
+            print(f"\n📞 Database has {count} contact(s)")
+    except:
+        pass
     
     while True:
         print("\n" + "="*50)
@@ -237,6 +283,7 @@ def menu():
         print("4 - Search by pattern")
         print("5 - Delete contact")
         print("6 - Bulk insert")
+        print("7 - Show all contacts")
         print("0 - Exit")
         print("-"*50)
 
@@ -254,11 +301,14 @@ def menu():
             delete_contact()
         elif choice == "6":
             bulk_insert()
+        elif choice == "7":
+            show_all_contacts()
         elif choice == "0":
             print("\nGoodbye!")
             break
         else:
             print("Invalid choice, please try again")
+
 
 if __name__ == "__main__":
     menu()
